@@ -2,6 +2,8 @@
 
 This is language switcher Laravel app sample. Laravelの言語切り替えサンプルです🇺🇸🇯🇵
 
+![langswitch](https://github.com/askdkc/laravel-language-switcher/assets/7894265/d807d110-971e-44c0-a284-9e1b57c73894)
+
 ## Installation
 
 ```bash
