@@ -16,4 +16,20 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_language_can_be_switched(): void
+    {
+        $this->from('/')->get('/language/en')
+            ->assertRedirect('/')
+            ->assertSessionHas('locale', 'en');
+
+        $this->get('/');
+
+        $this->assertSame('en', app()->getLocale());
+    }
+
+    public function test_unsupported_language_is_rejected(): void
+    {
+        $this->get('/language/unsupported')->assertNotFound();
+    }
 }

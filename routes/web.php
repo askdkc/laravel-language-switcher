@@ -24,7 +24,7 @@ Route::get('language/{locale}', function ($locale) {
     session()->put('locale', $locale);
 
     return redirect()->back();
-});
+})->whereIn('locale', ['en', 'ja']);
 
 Route::get('/dashboard', function () {
     return view('dashboard');
