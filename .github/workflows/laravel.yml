@@ -5,9 +5,12 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  schedule:
+    - cron: '0 21 * * 5' # Saturday 06:00 JST
 
 jobs:
   laravel-tests:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
 
     steps:
@@ -22,3 +25,38 @@ jobs:
       run: npm ci && npm run build
     - name: Execute Tests
       run: vendor/bin/phpunit
+
+  fresh-install-test:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+        coverage: none
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Create Laravel Application
+      run: composer create-project laravel/laravel fresh-app "^13.0" --no-interaction --prefer-dist
+    - name: Install Breeze and Breezejp
+      working-directory: fresh-app
+      run: composer require laravel/breeze askdkc/breezejp --dev --no-interaction --no-progress
+    - name: Install Language Switcher
+      working-directory: fresh-app
+      run: |
+        php artisan breeze:install blade --no-interaction
+        printf 'no\n' | php artisan breezejp
+        php artisan breezejp --langswitch --no-interaction
+    - name: Build Assets
+      working-directory: fresh-app
+      run: npm install && npm run build
+    - name: Test Fresh Installation
+      working-directory: fresh-app
+      run: |
+        php artisan test
+        test -f app/Http/Middleware/Localization.php
+        test -f lang/ja.json
+        grep -Fq 'Localization::class' bootstrap/app.php
+        php artisan route:list --path=language | grep -Fq 'language/{locale}'
