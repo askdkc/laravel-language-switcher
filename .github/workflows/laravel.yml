@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - uses: shivammathur/setup-php@v2
       with:
         php-version: '8.4'
@@ -35,7 +35,7 @@ jobs:
       with:
         php-version: '8.4'
         coverage: none
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v7
       with:
         node-version: '22'
     - name: Create Laravel Application
@@ -43,6 +43,11 @@ jobs:
     - name: Install Breeze and Breezejp
       working-directory: fresh-app
       run: composer require laravel/breeze askdkc/breezejp --dev --no-interaction --no-progress
+    # Breezejp does not yet match Laravel's typed middleware callback.
+    - name: Prepare Bootstrap for Breezejp
+      working-directory: fresh-app
+      run: >-
+        php -r '$path = "bootstrap/app.php"; $contents = file_get_contents($path); file_put_contents($path, str_replace("function (Middleware \$middleware): void", "function (Middleware \$middleware)", $contents));'
     - name: Install Language Switcher
       working-directory: fresh-app
       run: |
