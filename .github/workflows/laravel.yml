@@ -2,66 +2,72 @@ name: Laravel
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   schedule:
-    - cron: '0 21 * * 5' # Saturday 06:00 JST
+    - cron: "0 21 * * 5" # Saturday 06:00 JST
 
 jobs:
   laravel-tests:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ["8.4", "8.5"]
 
     steps:
-    - uses: actions/checkout@v7
-    - uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.4'
-        coverage: none
-    - name: Install Dependencies
-      run: composer install --no-interaction --no-progress --prefer-dist
-    - name: Build Assets
-      run: npm ci && npm run build
-    - name: Execute Tests
-      run: vendor/bin/phpunit
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - name: Install Dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Build Assets
+        run: npm ci && npm run build
+      - name: Execute Tests
+        run: vendor/bin/phpunit
 
   fresh-install-test:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ["8.4", "8.5"]
 
     steps:
-    - uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.4'
-        coverage: none
-    - uses: actions/setup-node@v7
-      with:
-        node-version: '22'
-    - name: Create Laravel Application
-      run: composer create-project laravel/laravel fresh-app "^13.0" --no-interaction --prefer-dist
-    - name: Install Breeze and Breezejp
-      working-directory: fresh-app
-      run: composer require laravel/breeze askdkc/breezejp --dev --no-interaction --no-progress
-    # Breezejp does not yet match Laravel's typed middleware callback.
-    - name: Prepare Bootstrap for Breezejp
-      working-directory: fresh-app
-      run: >-
-        php -r '$path = "bootstrap/app.php"; $contents = file_get_contents($path); file_put_contents($path, str_replace("function (Middleware \$middleware): void", "function (Middleware \$middleware)", $contents));'
-    - name: Install Language Switcher
-      working-directory: fresh-app
-      run: |
-        php artisan breeze:install blade --no-interaction
-        printf 'no\n' | php artisan breezejp
-        php artisan breezejp --langswitch --no-interaction
-    - name: Build Assets
-      working-directory: fresh-app
-      run: npm install && npm run build
-    - name: Test Fresh Installation
-      working-directory: fresh-app
-      run: |
-        php artisan test
-        test -f app/Http/Middleware/Localization.php
-        test -f lang/ja.json
-        grep -Fq 'Localization::class' bootstrap/app.php
-        php artisan route:list --path=language | grep -Fq 'language/{locale}'
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Create Laravel Application
+        run: composer create-project laravel/laravel fresh-app "^13.0" --no-interaction --prefer-dist
+      - name: Install Breeze and Breezejp
+        working-directory: fresh-app
+        run: composer require laravel/breeze askdkc/breezejp --dev --no-interaction --no-progress
+      # Breezejp does not yet match Laravel's typed middleware callback.
+      - name: Prepare Bootstrap for Breezejp
+        working-directory: fresh-app
+        run: >-
+          php -r '$path = "bootstrap/app.php"; $contents = file_get_contents($path); file_put_contents($path, str_replace("function (Middleware \$middleware): void", "function (Middleware \$middleware)", $contents));'
+      - name: Install Language Switcher
+        working-directory: fresh-app
+        run: |
+          php artisan breeze:install blade --no-interaction
+          printf 'no\n' | php artisan breezejp
+          php artisan breezejp --langswitch --no-interaction
+      - name: Build Assets
+        working-directory: fresh-app
+        run: npm install && npm run build
+      - name: Test Fresh Installation
+        working-directory: fresh-app
+        run: |
+          php artisan test
+          test -f app/Http/Middleware/Localization.php
+          test -f lang/ja.json
+          grep -Fq 'Localization::class' bootstrap/app.php
+          php artisan route:list --path=language | grep -Fq 'language/{locale}'
